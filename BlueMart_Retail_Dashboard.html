@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BlueMart Retail Analytics – Executive Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#f4f6fa;--card:#fff;--ink:#0f1b2d;--mute:#64748b;--line:#e3e8f0;--navy:#0b2545;--blue:#1f6feb;--teal:#13a89e;--amber:#e8a33d;--dim:#c9d3e3}
+@media(prefers-color-scheme:dark){:root{--bg:#0d1420;--card:#152033;--ink:#e8eef8;--mute:#94a3b8;--line:#25324a;--navy:#060d19;--dim:#34445f}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{background:linear-gradient(120deg,#0b2545,#13407a);color:#fff;padding:36px 5vw 56px}
+header small{letter-spacing:.14em;text-transform:uppercase;opacity:.7;font-size:12px}
+header h1{margin:6px 0 4px;font-size:clamp(24px,4vw,36px)}header p{margin:0;opacity:.85;max-width:640px}
+.badge{display:inline-block;margin-top:14px;background:rgba(255,255,255,.14);border-radius:20px;padding:4px 14px;font-size:13px}
+main{padding:0 5vw 60px;max-width:1280px;margin:0 auto}
+.filters{position:sticky;top:0;z-index:5;margin-top:-30px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 16px;display:flex;gap:14px;flex-wrap:wrap;align-items:end;box-shadow:0 6px 20px rgba(11,37,69,.12)}
+.filters label{font-size:11px;color:var(--mute);text-transform:uppercase;letter-spacing:.06em;display:flex;flex-direction:column;gap:3px}
+select,button{font:inherit;padding:7px 10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+button{background:var(--blue);color:#fff;border:0;cursor:pointer;font-weight:600}
+.focus{font-size:13px;color:var(--mute);margin:14px 2px 0}.focus b{color:var(--blue)}
+.grid{display:grid;gap:16px}.kpis{grid-template-columns:repeat(auto-fit,minmax(170px,1fr));margin-top:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+.kpi .l{font-size:12px;color:var(--mute);text-transform:uppercase;letter-spacing:.06em}.kpi .v{font-size:28px;font-weight:700;margin:4px 0}.kpi .s{font-size:12px;color:var(--mute)}
+h2{font-size:20px;margin:44px 0 4px}.sub{color:var(--mute);margin:0 0 16px;font-size:14px}
+h3{margin:0 0 2px;font-size:16px}
+.sum{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}.sum .card{border-left:4px solid var(--blue)}
+.two{grid-template-columns:repeat(auto-fit,minmax(380px,1fr))}
+.ch{position:relative;height:290px;margin-top:10px}
+.note{display:grid;gap:6px;margin-top:12px;font-size:14px}.note div{padding:8px 12px;border-radius:8px;background:var(--bg)}.note b{color:var(--blue);display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:right;padding:8px 6px;border-bottom:1px solid var(--line)}th:first-child,td:first-child{text-align:left}th{color:var(--mute);font-weight:600;font-size:12px;text-transform:uppercase}
+.pill{padding:2px 8px;border-radius:12px;font-size:12px;background:#fdf0d9;color:#8a5a00}
+.big{font-size:44px;font-weight:800;color:var(--teal);line-height:1}
+.take{counter-reset:t;list-style:none;padding:0;margin:0;display:grid;gap:10px}.take li{counter-increment:t;display:flex;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.take li:before{content:counter(t);background:var(--navy);color:#fff;border-radius:50%;min-width:28px;height:28px;display:grid;place-items:center;font-weight:700;font-size:13px}
+footer{color:var(--mute);font-size:12px;margin-top:40px}
+@media(max-width:480px){.two{grid-template-columns:1fr}}
+</style></head><body>
+<header><small>BlueMart · Retail Analytics</small><h1>Retail Analytics Dashboard</h1>
+<p>Executive view of sales, profit, products, stores, channels and inventory performance.</p>
+<span class="badge">Reporting period: Jan 2021 – Oct 2025 · Inventory as of 31 Oct 2025</span></header>
+<main>
+<div class="filters">
+<label>Year<select id="fy"></select></label><label>Category<select id="fc"></select></label>
+<label>City<select id="fci"></select></label><label>Channel<select id="fch"></select></label>
+<label>Store<select id="fs"></select></label><button id="rs">Reset filters</button></div>
+<div class="focus" id="focus"></div>
+<div class="grid kpis" id="kpis"></div>
+
+<h2>Executive Summary</h2><p class="sub">What management needs to know.</p>
+<div class="grid sum" id="sum"></div>
+
+<h2>Key Business Insights</h2><p class="sub">Sales, products, stores and channels at a glance. Use the filters above to focus on one item.</p>
+<div class="card"><h3>Sales over time</h3><div class="ch"><canvas id="c_trend"></canvas></div>
+<div class="note"><div><b>Finding</b>Sales are strongest in January–February and lowest in September–November, a pattern that repeats every year.</div><div><b>Business meaning</b>Stock and staffing plans should follow this yearly rhythm.</div></div></div>
+<div class="grid two" style="margin-top:16px">
+<div class="card"><h3>Sales and profit by category</h3><div class="ch"><canvas id="c_cat"></canvas></div>
+<div class="note"><div><b>Finding</b>Electronics generated the highest sales and profit, more than half of the total.</div><div><b>Business meaning</b>Electronics is the biggest contributor to revenue and profit.</div></div></div>
+<div class="card"><h3>Top 10 most profitable product groups</h3><div class="ch"><canvas id="c_sub"></canvas></div>
+<div class="note"><div><b>Finding</b>Batteries, Cables, Chargers and Mobile Accessories are the four most profitable groups.</div><div><b>Business meaning</b>Profit is concentrated in a few electronics product groups.</div></div></div>
+<div class="card"><h3>Sales by city</h3><div class="ch"><canvas id="c_city"></canvas></div>
+<div class="note"><div><b>Finding</b>Dubai delivers more than half of all sales; Sharjah delivers the least.</div><div><b>Business meaning</b>Overall results depend heavily on Dubai.</div></div></div>
+<div class="card"><h3>Sales by channel</h3><div class="ch"><canvas id="c_chan"></canvas></div>
+<div class="note"><div><b>Finding</b>Physical stores lead, but online channels together bring in more than half of sales.</div><div><b>Business meaning</b>Online selling is a major part of the business.</div></div></div>
+</div>
+
+<h2>Product and Sales View</h2><p class="sub">How product groups compare on sales and profit margin.</p>
+<div class="grid two">
+<div class="card"><h3>Profit margin by product group</h3><div class="ch"><canvas id="c_margin"></canvas></div>
+<div class="note"><div><b>Finding</b>Skincare has the lowest margin among the top 10 groups; Canned Goods and Detergent have the highest.</div></div></div>
+<div class="card"><h3>High sales, low profit products</h3><div style="overflow:auto"><table id="t_hl"></table></div>
+<div class="note"><div><b>Finding</b>Eight products sell well but earn little profit. Rice 1121 has the lowest margin.</div><div><b>Business meaning</b>These products bring revenue but add less profit than their sales suggest.</div></div></div></div>
+
+<h2>Store and Location View</h2><p class="sub">Store sales are close to each other. Values are approximate.</p>
+<div class="grid two">
+<div class="card"><h3>All stores – sales</h3><div class="ch" style="height:340px"><canvas id="c_store"></canvas></div></div>
+<div class="card"><h3>Top 5 and bottom 5 stores</h3><div style="overflow:auto"><table id="t_store"></table></div>
+<div class="note"><div><b>Finding</b>Every store sells between about 1.43M and 1.50M, a gap of roughly 5%.</div><div><b>Business meaning</b>No store is far ahead or far behind. The larger differences are between cities and channels.</div></div></div></div>
+
+<h2>Inventory View</h2><p class="sub">Stock position across 50 stores and 200 products on 31 Oct 2025.</p>
+<div class="grid two">
+<div class="card"><h3>Stock health</h3>
+<div class="grid" style="grid-template-columns:1fr 1fr;margin-top:10px"><div><div class="big">0</div><div class="sub">store-product positions below reorder point</div></div><div><div class="big" style="color:var(--amber)">2,098</div><div class="sub">of 8,735 positions (24%) sell fast but hold low stock</div></div></div>
+<div class="note"><div><b>Finding</b>Nothing is below its reorder point today, yet about one in four positions has high sales with low stock.</div><div><b>Business meaning</b>These are the first places a stock-out could appear.</div></div></div>
+<div class="card"><h3>Stock on hand per position (units)</h3><div class="ch"><canvas id="c_inv"></canvas></div>
+<div class="note"><div><b>Finding</b>The middle position holds 156 units, against an average reorder point of about 68.</div></div></div></div>
+
+<h2>Management Takeaways</h2><p class="sub">&nbsp;</p>
+<ol class="take" id="take"></ol>
+<footer>Sales values are shown in the dataset's own units. Store, city, channel and monthly values are read from the analysis charts and are approximate; category, product group, product and inventory counts are exact.</footer>
+</main>
+<script>
+const D={"months": ["2021-01", "2021-02", "2021-03", "2021-04", "2021-05", "2021-06", "2021-07", "2021-08", "2021-09", "2021-10", "2021-11", "2021-12", "2022-01", "2022-02", "2022-03", "2022-04", "2022-05", "2022-06", "2022-07", "2022-08", "2022-09", "2022-10", "2022-11", "2022-12", "2023-01", "2023-02", "2023-03", "2023-04", "2023-05", "2023-06", "2023-07", "2023-08", "2023-09", "2023-10", "2023-11", "2023-12", "2024-01", "2024-02", "2024-03", "2024-04", "2024-05", "2024-06", "2024-07", "2024-08", "2024-09", "2024-10", "2024-11", "2024-12", "2025-01", "2025-02", "2025-03", "2025-04", "2025-05", "2025-06", "2025-07", "2025-08", "2025-09", "2025-10"], "mv": [1982000.0, 1987000.0, 828000.0, 1207000.0, 1716000.0, 1103000.0, 1594000.0, 1536000.0, 742000.0, 747000.0, 882000.0, 1007000.0, 1978000.0, 1671000.0, 742000.0, 1495000.0, 1275000.0, 1050000.0, 1551000.0, 1599000.0, 761000.0, 832000.0, 801000.0, 1148000.0, 2014000.0, 1658000.0, 995000.0, 1396000.0, 1112000.0, 1126000.0, 1401000.0, 1454000.0, 721000.0, 805000.0, 792000.0, 1099000.0, 2189000.0, 1811000.0, 1328000.0, 1201000.0, 1128000.0, 1175000.0, 1572000.0, 1554000.0, 756000.0, 801000.0, 806000.0, 1012000.0, 2023000.0, 1743000.0, 1586000.0, 742000.0, 1141000.0, 1211000.0, 1527000.0, 1576000.0, 751000.0, 770000.0], "store": [["41", 1500000.0], ["11", 1500000.0], ["49", 1500000.0], ["44", 1500000.0], ["04", 1490000.0], ["37", 1490000.0], ["35", 1480000.0], ["08", 1480000.0], ["17", 1480000.0], ["19", 1480000.0], ["50", 1480000.0], ["07", 1480000.0], ["32", 1480000.0], ["18", 1480000.0], ["24", 1470000.0], ["05", 1470000.0], ["29", 1470000.0], ["15", 1470000.0], ["14", 1470000.0], ["48", 1470000.0], ["31", 1470000.0], ["40", 1470000.0], ["06", 1470000.0], ["16", 1470000.0], ["33", 1470000.0], ["21", 1460000.0], ["13", 1460000.0], ["26", 1460000.0], ["46", 1460000.0], ["45", 1460000.0], ["10", 1460000.0], ["22", 1460000.0], ["25", 1460000.0], ["43", 1460000.0], ["38", 1450000.0], ["28", 1450000.0], ["30", 1450000.0], ["47", 1450000.0], ["20", 1450000.0], ["23", 1450000.0], ["34", 1450000.0], ["09", 1440000.0], ["01", 1440000.0], ["36", 1440000.0], ["39", 1440000.0], ["02", 1440000.0], ["42", 1430000.0], ["27", 1430000.0], ["12", 1430000.0], ["03", 1430000.0]], "city": [["Dubai", 41050000.0], ["Abu Dhabi", 20520000.0], ["Sharjah", 11640000.0]], "chan": [["Store", 30280000.0], ["Website", 20250000.0], ["MobileApp", 13120000.0], ["Amazon.ae", 6470000.0], ["Noon", 3090000.0]]};
+const CAT=[["Electronics",40790950.89,11848265.14],["Household",8190735.92,2360418.07],["Personal Care",8181799.29,2115959.34],["Grocery",5564702.41,1661022.56],["Snacks",4321275.25,1299444.11],["Dairy",4238161.64,1237884.73],["Beverages",1922157.59,574416.61]];
+const SUB=[["Batteries",12530863.56,3961439.04],["Cables",11490862.59,3393750.71],["Chargers",9227916.96,2311019.26],["Mobile Accessories",7541307.78,2182056.13],["Cleaning Supplies",3138214.56,898445.37],["Paper Products",2745043.37,743314.52],["Toothpaste",2403497.14,655592.68],["Skincare",2424275.35,551642.10],["Canned Goods",1375868.80,449469.99],["Detergent",1330233.96,427244.32]];
+const HL=[["Dairy Cream 1015",216990.2,53024.38],["Canned Goods 1029",221385.97,53295.53],["Pasta 1196",240533.99,56561.85],["Rice 1121",252178.55,36236.6],["Spices 1128",210567.09,53687.09],["Cleaning Supplies 1179",225473.13,59049.43],["Paper Products 1028",321556.41,58348.01],["Soap 1156",279936.17,53765.73]];
+const TS=CAT.reduce((a,c)=>a+c[1],0),TP=CAT.reduce((a,c)=>a+c[2],0),TX=641798;
+const M=v=>v>=1e6?(v/1e6).toFixed(2)+"M":v>=1e3?(v/1e3).toFixed(0)+"K":v.toFixed(0),P=v=>v.toFixed(1)+"%",N=v=>Math.round(v).toLocaleString();
+const $=id=>document.getElementById(id);
+const yrs=[2021,2022,2023,2024,2025],mn=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const yTot=y=>D.months.reduce((a,m,i)=>a+(m.startsWith(y)?D.mv[i]:0),0);
+const fill=(id,arr)=>{$(id).innerHTML='<option value="">All</option>'+arr.map(x=>`<option>${x}</option>`).join("")};
+fill("fy",yrs);fill("fc",CAT.map(c=>c[0]));fill("fci",D.city.map(c=>c[0]));fill("fch",D.chan.map(c=>c[0]));fill("fs",D.store.map(s=>"Store "+s[0]).sort());
+const sel={y:"fy",c:"fc",ci:"fci",ch:"fch",s:"fs"};let F={k:null,v:""};
+Object.entries(sel).forEach(([k,id])=>$(id).onchange=()=>{Object.values(sel).forEach(i=>i!==id&&($(i).value=""));F={k:$(id).value?k:null,v:$(id).value};draw()});
+$("rs").onclick=()=>{Object.values(sel).forEach(i=>$(i).value="");F={k:null,v:""};draw()};
+const rank=(arr,v)=>arr.slice().sort((a,b)=>b-a).indexOf(v)+1;
+function kpis(){let k=[];
+ if(!F.k)k=[["Total Sales",M(TS),"Jan 2021 – Oct 2025"],["Total Profit",M(TP),"After product cost"],["Profit Margin",P(TP/TS*100),"Profit ÷ sales"],["Transactions",N(TX),"Sales records"],["Avg Sale Value",(TS/TX).toFixed(2),"Per transaction"],["Stores · Products","50 · 200","Active in range"]];
+ else if(F.k==="c"){const c=CAT.find(x=>x[0]===F.v);k=[["Sales",M(c[1]),F.v],["Profit",M(c[2]),F.v],["Profit Margin",P(c[2]/c[1]*100),"Overall "+P(TP/TS*100)],["Share of Sales",P(c[1]/TS*100),"Rank "+rank(CAT.map(x=>x[1]),c[1])+" of 7"],["Share of Profit",P(c[2]/TP*100),"Of total profit"]];}
+ else if(F.k==="y"){const t=yTot(F.v),a=yrs.map(y=>yTot(String(y))),n=D.months.filter(m=>m.startsWith(F.v)).length;k=[["Sales ≈",M(t),F.v],["Share of Total",P(t/TS*100),"Of all years"],["Monthly Average",M(t/n),n+" months"],["Best Month",mn[D.mv.indexOf(Math.max(...D.months.map((m,i)=>m.startsWith(F.v)?D.mv[i]:0)))%12],"Highest sales"]];}
+ else{const src=F.k==="ci"?D.city:F.k==="ch"?D.chan:D.store.map(s=>["Store "+s[0],s[1]]);const r=src.find(x=>x[0]===F.v),vals=src.map(x=>x[1]);k=[["Sales ≈",M(r[1]),F.v],["Share of Sales",P(r[1]/TS*100),"Of total"],["Rank","#"+rank(vals,r[1]),"of "+src.length]];if(F.k==="s")k.push(["Vs Store Average",((r[1]/(TS/50)-1)*100).toFixed(1)+"%","Average ≈ "+M(TS/50)]);}
+ $("kpis").innerHTML=k.map(x=>`<div class="card kpi"><div class="l">${x[0]}</div><div class="v">${x[1]}</div><div class="s">${x[2]}</div></div>`).join("");
+ $("focus").innerHTML=F.k?`Showing: <b>${F.v}</b> — other filters reset. Highlighted in the charts below.`:"Showing: <b>All BlueMart</b>. Pick one filter to focus on a year, category, city, channel or store.";}
+$("sum").innerHTML=[["Sales reached 73.2M and profit 21.1M, a 28.8% profit margin."],["Electronics generated 56% of sales and profit."],["Dubai brings in about 56% of sales; Abu Dhabi about 28% and Sharjah about 16%."],["Online channels together bring in about 59% of sales; physical stores about 41%."],["Sales peak in January–February and dip in September–November every year."],["Nothing is below its reorder point, but 24% of store-product positions sell fast with low stock."]].map(x=>`<div class="card">${x[0]}</div>`).join("");
+$("take").innerHTML=["<span><b>Electronics carries the business.</b> More than half of sales and profit come from one category.</span>","<span><b>Dubai is the main market.</b> It brings in over half of sales, so changes there affect the whole company.</span>","<span><b>Online is a big channel.</b> Website, app and marketplaces together outsell physical stores.</span>","<span><b>Sales follow a yearly pattern.</b> Plan stock and staffing around the January peak and autumn dip.</span>","<span><b>Watch fast sellers with low stock.</b> About 2,098 positions could run out first, even though none is below reorder point today.</span>","<span><b>Check low-margin best sellers.</b> Eight products sell well but earn little profit, led by Rice 1121.</span>"].map(x=>`<li>${x}</li>`).join("");
+$("t_hl").innerHTML="<tr><th>Product</th><th>Sales</th><th>Profit</th><th>Margin</th></tr>"+HL.map(h=>`<tr><td>${h[0]}</td><td>${M(h[1])}</td><td>${M(h[2])}</td><td><span class="pill">${P(h[2]/h[1]*100)}</span></td></tr>`).join("");
+const st=D.store,tb=st.slice(0,5).concat(st.slice(-5));
+$("t_store").innerHTML="<tr><th>Store</th><th>Sales ≈</th><th>Group</th></tr>"+tb.map((s,i)=>`<tr><td>Store ${s[0]}</td><td>${M(s[1])}</td><td>${i<5?"Top 5":"Bottom 5"}</td></tr>`).join("");
+const C={},B="#1f6feb",G="#13a89e",DIM="#c9d3e3",txt=getComputedStyle(document.body).color;
+Chart.defaults.color=getComputedStyle(document.body).getPropertyValue("--mute").trim()||"#64748b";Chart.defaults.font.family="system-ui,sans-serif";
+function mk(id,cfg){C[id]&&C[id].destroy();cfg.options=Object.assign({responsive:true,maintainAspectRatio:false,plugins:{legend:{display:cfg.legend||false}}},cfg.options||{});C[id]=new Chart($(id),cfg)}
+const hi=(labels,key,base)=>labels.map(l=>F.k&&F.k===key&&l!==F.v?DIM:base);
+const fm={callbacks:{label:c=>" "+c.dataset.label+": "+M(c.parsed.y??c.parsed.x??c.parsed)}};
+function draw(){kpis();
+ const idx=D.months.map((m,i)=>i).filter(i=>F.k!=="y"||D.months[i].startsWith(F.v));
+ mk("c_trend",{type:"line",data:{labels:idx.map(i=>D.months[i]),datasets:[{label:"Sales",data:idx.map(i=>D.mv[i]),borderColor:B,backgroundColor:"rgba(31,111,235,.12)",fill:true,tension:.3,pointRadius:3}]},options:{plugins:{tooltip:fm,legend:{display:false}},scales:{y:{ticks:{callback:M}},x:{ticks:{maxTicksLimit:12}}}}});
+ mk("c_cat",{type:"bar",legend:true,data:{labels:CAT.map(c=>c[0]),datasets:[{label:"Sales",data:CAT.map(c=>c[1]),backgroundColor:hi(CAT.map(c=>c[0]),"c",B)},{label:"Profit",data:CAT.map(c=>c[2]),backgroundColor:hi(CAT.map(c=>c[0]),"c",G)}]},options:{plugins:{tooltip:fm,legend:{display:true}},scales:{y:{ticks:{callback:M}}}}});
+ mk("c_sub",{type:"bar",data:{labels:SUB.map(c=>c[0]),datasets:[{label:"Profit",data:SUB.map(c=>c[2]),backgroundColor:B}]},options:{indexAxis:"y",plugins:{tooltip:fm,legend:{display:false}},scales:{x:{ticks:{callback:M}}}}});
+ mk("c_city",{type:"doughnut",legend:true,data:{labels:D.city.map(c=>c[0]),datasets:[{data:D.city.map(c=>c[1]),backgroundColor:D.city.map((c,i)=>F.k==="ci"&&c[0]!==F.v?DIM:["#0b2545","#1f6feb","#13a89e"][i])}]},options:{plugins:{legend:{display:true,position:"bottom"},tooltip:{callbacks:{label:c=>" "+c.label+": "+M(c.parsed)+" ("+P(c.parsed/TS*100)+")"}}}}});
+ mk("c_chan",{type:"bar",data:{labels:D.chan.map(c=>c[0]),datasets:[{label:"Sales",data:D.chan.map(c=>c[1]),backgroundColor:hi(D.chan.map(c=>c[0]),"ch",B)}]},options:{plugins:{tooltip:fm,legend:{display:false}},scales:{y:{ticks:{callback:M}}}}});
+ mk("c_margin",{type:"bar",data:{labels:SUB.map(c=>c[0]),datasets:[{label:"Margin %",data:SUB.map(c=>+(c[2]/c[1]*100).toFixed(1)),backgroundColor:SUB.map(c=>c[0]==="Skincare"?"#e8a33d":G)}]},options:{plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>v+"%"}}}}});
+ mk("c_store",{type:"bar",data:{labels:D.store.map(s=>"S"+s[0]),datasets:[{label:"Sales ≈",data:D.store.map(s=>s[1]),backgroundColor:D.store.map(s=>F.k==="s"&&"Store "+s[0]!==F.v?DIM:B)}]},options:{plugins:{tooltip:{callbacks:{title:i=>"Store "+i[0].label.slice(1),label:c=>" Sales ≈ "+M(c.parsed.y)}},legend:{display:false}},scales:{y:{min:1.2e6,ticks:{callback:M}},x:{ticks:{font:{size:9},maxRotation:90}}}}});
+ mk("c_inv",{type:"bar",data:{labels:["Lowest","25th %","Middle","75th %","Highest"],datasets:[{label:"Units on hand",data:[35,112,156,217,449],backgroundColor:[DIM,B,B,B,DIM]},{type:"line",label:"Avg reorder point",data:[68,68,68,68,68],borderColor:"#e8a33d",pointRadius:0,borderDash:[6,4]}]},options:{plugins:{legend:{display:true}}}});
+}
+draw();
+</script></body></html>
